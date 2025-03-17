@@ -17,6 +17,14 @@ import {
   Typography,
   CircularProgress,
   Alert,
+  Table,
+  TableContainer,
+  TableHead,
+  TableRow,
+  TableCell,
+  TableBody,
+  Card,
+  CardContent
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSearchResults } from "../redux/actions/searchActions";
@@ -153,37 +161,45 @@ const Shipping = () => {
       )}
 
       {/* Results Section (Only Visible After Search) */}
-      {results && (
+      {results && results.length > 0 && (
         <Paper sx={{ mt: 4, p: 3, backgroundColor: "#f4f4f4", borderRadius: "10px" }}>
           <Typography variant="h6" color="primary" fontWeight="bold">
-            Search Results
+            Available Delivery Options
           </Typography>
-          <Grid container spacing={2} sx={{ mt: 2 }}>
-            <Grid item xs={6}>
-              <Typography variant="subtitle1"><strong>From:</strong> {from?.label}</Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Typography variant="subtitle1"><strong>To:</strong> {to?.label}</Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Typography variant="subtitle1"><strong>Packages:</strong> {packages}</Typography>
-            </Grid>
-            <Grid item xs={6}>
-              <Typography variant="subtitle1"><strong>Package Weight:</strong> {weight} kg</Typography>
-            </Grid>
-          </Grid>
 
-          {/* Display API Results */}
-          <Box sx={{ mt: 3 }}>
-            <Typography variant="subtitle1">
-              <strong>Estimated Price:</strong> ${results.price}
-            </Typography>
-            <Typography variant="subtitle1">
-              <strong>Estimated Delivery Time:</strong> {results.deliveryTime} days
-            </Typography>
-          </Box>
+          <Grid container spacing={2} sx={{ mt: 2 }}>
+            {results.map((item, index) => (
+              <Grid item xs={12} key={index}>
+                <Card sx={{ p: 2, backgroundColor: "#ffffff", borderRadius: "8px", boxShadow: 2 }}>
+                  <CardContent>
+                    <Typography variant="h6" color="primary" fontWeight="bold">
+                      {item.delivery_type.replace("_", " ").toUpperCase()}
+                    </Typography>
+                    <Typography variant="subtitle1" sx={{ mt: 1 }}>
+                      <strong>Rate:</strong> ${item.delivery_rate}
+                    </Typography>
+                    <Typography variant="subtitle1" sx={{ mt: 1 }}>
+                      <strong>Ship Date : </strong>{new Date(item.start_date.split("T")[0]).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}, 6:00 PM EST
+                      </Typography>
+                    <Typography variant="subtitle1" sx={{ mt: 1 }}>
+                      <strong>Delivered By : </strong>{new Date(item.delivery_date.split("T")[0]).toLocaleDateString("en-GB", {
+                        day: "2-digit",
+                        month: "short",
+                        year: "numeric",
+                      })}, 10:00 PM EST
+                    </Typography>
+                  </CardContent>
+                </Card>
+              </Grid>
+            ))}
+          </Grid>
         </Paper>
       )}
+
     </Container>
     </Box>
   );

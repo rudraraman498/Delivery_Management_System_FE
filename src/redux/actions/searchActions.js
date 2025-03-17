@@ -10,7 +10,7 @@ export const fetchSearchResults = (from, to, packages, number) => async (dispatc
   dispatch({ type: SEARCH_REQUEST });
   console.log(typeof(from))
   try {
-    const response = await axios.get("http://localhost:8080/api/getPrice", {
+    const response = await axios.get("http://localhost:8080/api/getDeliveries", {
       params: {
         from: from, // Properly encode spaces and special characters
         to: to,
