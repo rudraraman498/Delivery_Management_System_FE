@@ -1,10 +1,10 @@
-import React, {useState} from "react";
+import React, {use, useState, useEffect} from "react";
 //import { Container, Typography, Button, Box } from "@mui/material";
 import { useNavigate } from "react-router-dom";
 import store from "../redux/store"
 
 import NavigationBar from "./NavigationBar";
-
+import ShippingForm from "./ShippingForm";
 import {
   Autocomplete,
   TextField,
@@ -28,13 +28,18 @@ import {
 } from "@mui/material";
 import { useDispatch, useSelector } from "react-redux";
 import { fetchSearchResults } from "../redux/actions/searchActions";
+import { fetchLocations } from "../redux/actions/getLocationActions";
+import { selectShipment } from "../redux/actions/shippingActions";
 
-const locations = [
+const location = [
   { label: "Indianapolis, Indiana, 46204, United States" },
   { label: "Las Vegas, Nevada, 89101, United States" },
   { label: "New York, NY, 10001, United States" },
   { label: "San Francisco, CA, 94103, United States" },
 ];
+
+let itemChosen = false;
+
 
 const Shipping = () => {
   const navigate = useNavigate();
@@ -43,40 +48,64 @@ const Shipping = () => {
   const [to, setTo] = useState(null);
   const [packages, setPackages] = useState("1");
   const [weight, setWeight] = useState("");
-
+  const [shippingItem,setShippingItem] = useState({})
+  //const [locations,setLocations] = useState([])
   const dispatch = useDispatch();
   const { results, loading, error } = useSelector((state) => state.search);
+  const  { locations, locationsError } = useSelector((state)=>state.locations)
+  const [shipFromData, setShipFromData] = useState({
+      country: "United States",
+      fullName: "",
+      contactName: "",
+      email: "",
+      phone: "",
+      streetAddress: "",
+      notification: false
+    });
+  
+    const [shipToData, setShipToData] = useState({
+      country: "United States",
+      fullName: "",
+      contactName: "",
+      email: "",
+      phone: "",
+      streetAddress: "",
+      notification: false
+    });
+
+    const goToPayment = () => {
+      console.log(shipFromData,shipToData)
+    } 
+  
+
+  useEffect(() => {
+    dispatch(fetchLocations());
+  }, [dispatch]);
 
   const handleSearch = () => {
+    itemChosen = false;
     if (!from || !to || !weight) {
       alert("Please fill all fields before searching!");
       return;
     }
-    console.log("Redux Store:", store.getState());
-    dispatch(fetchSearchResults(from.label,to.label, packages, weight ));
+    
+    dispatch(fetchSearchResults(from.name,to.name, packages, weight ));
   };
 
-  // return (
-  //   <Box>
-  //   <NavigationBar/>
-  //   <Container sx={{ mt: 8, textAlign: "center" }}>
-  //     <Typography variant="h3" fontWeight="bold" color="primary">
-  //       Welcome to the New Page!
-  //     </Typography>
-  //     <Typography variant="body1" sx={{ mt: 2 }}>
-  //       This is a new page that you navigated to using React Router.
-  //     </Typography>
-  //     <Button
-  //       variant="contained"
-  //       color="secondary"
-  //       sx={{ mt: 4 }}
-  //       onClick={() => navigate("/")}
-  //     >
-  //       Go Back to Home
-  //     </Button>
-  //   </Container>
-  //   </Box>
-  // );
+  const handleShipping = (item) =>{
+   
+    let chosenShipping = {...item}
+    chosenShipping["from"] = from.name;
+    chosenShipping["to"] = to.name;
+    chosenShipping["packages"] = packages;
+    chosenShipping["weight"] = weight;
+    console.log(chosenShipping);
+    setShippingItem(chosenShipping);
+    itemChosen = true;
+    dispatch(selectShipment(chosenShipping));
+    console.log("Redux Store:", store.getState());
+  }
+
   return (
     <Box>
 
@@ -88,7 +117,7 @@ const Shipping = () => {
         {/* From Field */}
         <Autocomplete
           options={locations}
-          getOptionLabel={(option) => option.label}
+          getOptionLabel={(option) => option.name}
           value={from}
           onChange={(event, newValue) => setFrom(newValue)}
           renderInput={(params) => (
@@ -100,7 +129,7 @@ const Shipping = () => {
         {/* To Field */}
         <Autocomplete
           options={locations}
-          getOptionLabel={(option) => option.label}
+          getOptionLabel={(option) => option.name}
           value={to}
           onChange={(event, newValue) => setTo(newValue)}
           renderInput={(params) => (
@@ -132,6 +161,7 @@ const Shipping = () => {
           value={weight}
           onChange={(e) => setWeight(e.target.value)}
           variant="outlined"
+          
           sx={{ width: 150 }}
         />
 
@@ -161,7 +191,7 @@ const Shipping = () => {
       )}
 
       {/* Results Section (Only Visible After Search) */}
-      {results && results.length > 0 && (
+      {results && results.length > 0 && !itemChosen &&  (
         <Paper sx={{ mt: 4, p: 3, backgroundColor: "#f4f4f4", borderRadius: "10px" }}>
           <Typography variant="h6" color="primary" fontWeight="bold">
             Available Delivery Options
@@ -192,18 +222,47 @@ const Shipping = () => {
                         year: "numeric",
                       })}, 10:00 PM EST
                     </Typography>
+                    <Button
+                      variant="contained"
+                      color="primary"
+                      onClick={() => handleShipping(item)}
+                      sx={{ height: "56px" }}
+                    >
+                      Ship Now
+                    </Button>
                   </CardContent>
                 </Card>
               </Grid>
             ))}
+
+            
           </Grid>
         </Paper>
+      )}
+
+      {itemChosen &&   (
+        <div>
+        <ShippingForm shipFromData={shipFromData} setShipFromData={setShipFromData} shipToData={shipToData} setShipToData={setShipToData} goToPayment={goToPayment} handleSearch={handleSearch}/>
+        {/* <Box sx={{ display: "flex", justifyContent: "flex-start", mt: 4 }}>
+              <Button
+                variant="contained"
+                color="primary"
+                onClick={handleSearch}
+                sx={{ height: "56px" , alignContent:"center"}}
+              >
+                Back
+              </Button>
+              </Box>
+         */}
+        </div>
       )}
 
     </Container>
     </Box>
   );
 };
+
+
 
 
 export default Shipping;
