@@ -2,15 +2,23 @@ import React, { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { AppBar, Box, Typography, Button, Toolbar } from "@mui/material";
 import LoginPage from "./LoginPage";
+import { useDispatch, useSelector } from 'react-redux';
+import { logoutUser } from "../redux/actions/authActions";
 
 const NavigationBar = () => {
   const navigate = useNavigate();
   const [showLoginModal, setShowLoginModal] = useState(false);
 
+  const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
+  const dispatch = useDispatch();
   const handleLoginClick = () => {
     console.log("Login button clicked"); // Add this for debugging
     setShowLoginModal(true);
   };
+
+  const handleLogout = () => {
+    dispatch(logoutUser());
+  }
 
   return (
     <AppBar position="static" color="transparent" elevation={0}>
@@ -31,12 +39,21 @@ const NavigationBar = () => {
           <Button color="inherit">Contact</Button>
         </Box>
         <Box>
-          <Button color="primary" onClick={handleLoginClick}>
+          
+          { !isAuthenticated && (
+            <div>
+            <Button color="primary" onClick={handleLoginClick}>
             Log in
           </Button>
           <Button variant="contained" color="primary">
             Get Started
           </Button>
+          </div>
+        )}
+          {isAuthenticated && (<Button color="primary" onClick={handleLogout}>
+            Log out
+          </Button>)}
+          
         </Box>
       </Toolbar>
       <LoginPage isOpen={showLoginModal} onClose={() => setShowLoginModal(false)} />

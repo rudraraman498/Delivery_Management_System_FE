@@ -1,9 +1,11 @@
 // src/redux/actions/authActions.js
 import axios from 'axios';
 
-export const registerUser = (email, password) => async (dispatch) => {
+export const registerUser = ({firstName, lastName, email, password}) => async (dispatch) => {
   try {
-    const response = await axios.post('/api/register', { email, password });
+    let firstname = firstName
+    let lastname = lastName
+    const response = await axios.post('http://localhost:8080/user/register', { firstname, lastname, email, password });
     dispatch({ type: 'REGISTER_SUCCESS', payload: response.data });
     return { success: true };
   } catch (error) {
@@ -20,7 +22,9 @@ export const registerUser = (email, password) => async (dispatch) => {
 
 export const loginUser = (email, password) => async (dispatch) => {
   try {
-    const response = await axios.post('/api/login', { email, password });
+    const response = await axios.post('http://localhost:8080/user/login', { email, password }, {headers: {
+      "Content-Type": "application/json"
+    }});
     dispatch({ type: 'LOGIN_SUCCESS', payload: response.data });
     return { success: true };
   } catch (error) {
@@ -34,3 +38,9 @@ export const loginUser = (email, password) => async (dispatch) => {
     };
   }
 };
+
+export const logoutUser = () => {
+  return {
+    type: "LOGOUT",
+  }
+}
