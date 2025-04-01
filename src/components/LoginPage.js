@@ -1,4 +1,5 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
+import { useDispatch, useSelector } from 'react-redux';
 import {
   Dialog,
   DialogTitle,
@@ -10,16 +11,36 @@ import {
   Typography,
   Box,
   Link,
-  FormHelperText
+  FormHelperText,
+  CircularProgress,
+  Alert
 } from "@mui/material";
 import CloseIcon from "@mui/icons-material/Close";
+import { registerUser, loginUser } from '../redux/actions/authActions';
 
 const LoginPage = ({ isOpen, onClose }) => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+  const [firstName, setFirstName] = useState("");
+  const [lastName, setLastName] = useState("");
   const [isRegisterMode, setIsRegisterMode] = useState(false);
   const [passwordError, setPasswordError] = useState("");
+  const [formError, setFormError] = useState("");
+  const [loading, setLoading] = useState(false);
+  
+  const dispatch = useDispatch();
+  
+  const authError = useSelector(state => state.auth.error);
+  const isAuthenticated = useSelector(state => state.auth.isAuthenticated);
+
+  useEffect(() => {
+    if (isAuthenticated && isOpen) {
+      // If user is authenticated and modal is open, close it
+      resetForm();
+      onClose();
+    }
+  }, [isAuthenticated, isOpen, onClose]);
 
   const validatePassword = (pass) => {
     if (pass.length < 8) {
@@ -53,8 +74,17 @@ const LoginPage = ({ isOpen, onClose }) => {
     setConfirmPassword(e.target.value);
   };
 
-  const handleSubmit = (e) => {
+  const handleFirstNameChange = (e) => {
+    setFirstName(e.target.value);
+  };
+
+  const handleLastNameChange = (e) => {
+    setLastName(e.target.value);
+  };
+
+  const handleSubmit = async (e) => {
     e.preventDefault();
+    setFormError("");
     
     if (isRegisterMode) {
       // Registration validation
@@ -69,23 +99,62 @@ const LoginPage = ({ isOpen, onClose }) => {
         return;
       }
       
-      // Registration logic here
-      console.log("Registration with:", { email, password });
+      if (!firstName || !lastName) {
+        setFormError("First Name and Last Name are required");
+        return;
+      }
+      
+      try {
+        setLoading(true);
+        // Dispatch registration action with await to catch the result
+        const result = await dispatch(registerUser({ email, password, firstName, lastName }));
+        
+        if (!result.success) {
+          // Handle user already exists error
+          if (result.error?.includes("already exists")) {
+            setFormError("User already exists. Please sign in instead.");
+          } else {
+            setFormError(result.error || "Registration failed");
+          }
+        } else {
+          // Registration successful, user is automatically logged in
+          resetForm();
+          onClose();
+        }
+      } catch (error) {
+        setFormError("An unexpected error occurred");
+      } finally {
+        setLoading(false);
+      }
     } else {
-      // Login logic here
-      console.log("Login with:", { email });
+      // Login logic
+      try {
+        setLoading(true);
+        const result = await dispatch(loginUser(email, password));
+        
+        if (!result.success) {
+          setFormError(result.error || "Invalid email or password");
+        } else {
+          // Login successful
+          resetForm();
+          onClose();
+        }
+      } catch (error) {
+        setFormError("An unexpected error occurred");
+      } finally {
+        setLoading(false);
+      }
     }
-    
-    // Reset form and close dialog
-    resetForm();
-    onClose();
   };
 
   const resetForm = () => {
     setEmail("");
     setPassword("");
     setConfirmPassword("");
+    setFirstName("");
+    setLastName("");
     setPasswordError("");
+    setFormError("");
   };
 
   const toggleMode = () => {
@@ -105,8 +174,41 @@ const LoginPage = ({ isOpen, onClose }) => {
       </DialogTitle>
       <form onSubmit={handleSubmit}>
         <DialogContent>
+          {formError && (
+            <Alert severity="error" sx={{ mb: 2 }}>{formError}</Alert>
+          )}
+          
+          {isRegisterMode && (
+            <>
+              <TextField
+                autoFocus
+                margin="dense"
+                id="firstName"
+                label="First Name"
+                type="text"
+                fullWidth
+                variant="outlined"
+                value={firstName}
+                onChange={handleFirstNameChange}
+                required
+                disabled={loading}
+              />
+              <TextField
+                margin="dense"
+                id="lastName"
+                label="Last Name"
+                type="text"
+                fullWidth
+                variant="outlined"
+                value={lastName}
+                onChange={handleLastNameChange}
+                required
+                disabled={loading}
+              />
+            </>
+          )}
+          
           <TextField
-            autoFocus
             margin="dense"
             id="email"
             label="Email Address"
@@ -116,6 +218,7 @@ const LoginPage = ({ isOpen, onClose }) => {
             value={email}
             onChange={(e) => setEmail(e.target.value)}
             required
+            disabled={loading}
           />
           <TextField
             margin="dense"
@@ -128,6 +231,7 @@ const LoginPage = ({ isOpen, onClose }) => {
             onChange={handlePasswordChange}
             error={!!passwordError}
             required
+            disabled={loading}
           />
           {isRegisterMode && (
             <>
@@ -143,6 +247,7 @@ const LoginPage = ({ isOpen, onClose }) => {
                 error={password !== confirmPassword && confirmPassword !== ""}
                 helperText={password !== confirmPassword && confirmPassword !== "" ? "Passwords do not match" : ""}
                 required
+                disabled={loading}
               />
               {passwordError && <FormHelperText error>{passwordError}</FormHelperText>}
               <Box mt={2}>
@@ -161,11 +266,23 @@ const LoginPage = ({ isOpen, onClose }) => {
           )}
         </DialogContent>
         <DialogActions sx={{ px: 3, pb: 2, flexDirection: "column", alignItems: "stretch" }}>
-          <Button type="submit" variant="contained" color="primary" fullWidth>
-            {isRegisterMode ? "Register" : "Sign In"}
+          <Button 
+            type="submit" 
+            variant="contained" 
+            color="primary" 
+            fullWidth
+            disabled={loading}
+          >
+            {loading ? <CircularProgress size={24} /> : isRegisterMode ? "Register" : "Sign In"}
           </Button>
           <Box mt={1} textAlign="center">
-            <Link component="button" variant="body2" onClick={toggleMode}>
+            <Link 
+              component="button" 
+              variant="body2" 
+              onClick={toggleMode}
+              disabled={loading}
+              type="button"
+            >
               {isRegisterMode ? "Already have an account? Sign in" : "Register New User?"}
             </Link>
           </Box>
